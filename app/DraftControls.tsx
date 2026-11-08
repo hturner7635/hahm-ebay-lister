@@ -492,9 +492,9 @@ export function DraftControls({ group: g, photoById, onGroupEdit }: Props) {
           ))}
         </details>
         {!options?.locations.length && options && (
-          <p>
-            Create an inventory location with your real address in eBay before
-            publishing.
+          <p className="note-error">
+            {options.locationNote ??
+              "Your eBay account has no shipping origin yet. Add your ship-from address to the app's settings (EBAY_LOCATION_ADDRESS, EBAY_LOCATION_CITY, EBAY_LOCATION_STATE and EBAY_LOCATION_POSTAL_CODE in Vercel), redeploy, then load your eBay policies again."}
           </p>
         )}
       </details>

@@ -123,7 +123,9 @@ and redeploy with `vercel --prod`.
    - Choose **OAuth** (not Auth'n'Auth).
 3. Copy the generated **RuName** — the short identifier (like `Name-XXXX-XXXX-XXXX`),
    **not** the long "eBay Production Sign In (OAuth)" URL shown on the same page.
-4. Put all the values into Vercel's env vars (below) and redeploy.
+4. Put all the values into Vercel's env vars (below) and redeploy. Include your
+   ship-from address (`EBAY_LOCATION_*`) unless your eBay account already has an
+   inventory location: eBay won't publish without one.
 5. On the live site, click **Connect eBay**, approve on eBay, and paste the URL
    from eBay's confirmation page back into the app. Done (lasts ~18 months).
 
@@ -151,7 +153,8 @@ and redeploy with `vercel --prod`.
 | `EBAY_RU_NAME` | for posting | Your eBay RuName — the short `Name-XXXX-XXXX-XXXX` identifier, **not** the long "Sign In (OAuth)" URL |
 | `SESSION_SECRET` | for posting | Random string to encrypt your eBay token. Generate: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
 | `APP_URL` | for posting | Your deployed URL, e.g. `https://your-app.vercel.app` |
-| `EBAY_LOCATION_POSTAL_CODE` | optional | Your ZIP (only used once to create an eBay inventory location) |
+| `EBAY_LOCATION_ADDRESS` / `_CITY` / `_STATE` / `_POSTAL_CODE` | for posting, unless your eBay account already has an inventory location | Your ship-from address (street, city, two-letter state code, ZIP). eBay won't publish without an inventory location, so if your account has none, the app creates one from these the first time you load your eBay policies. `EBAY_LOCATION_POSTAL_CODE` is required for this; the rest make the location exact. Kept in Vercel so your address never goes into the code. |
+| `EBAY_LOCATION_COUNTRY` | optional | Two-letter country code for the ship-from address. Default `US`. |
 | `EBAY_DEFAULT_PACKAGE_WEIGHT_OZ` | optional | Default package weight in ounces (16 = 1 lb) sent to eBay so **calculated-shipping** policies can publish (avoids eBay error 25020). Overrides the built-in per-item-class defaults (coats, shoes, media, etc.). Editable per listing on eBay. |
 | `EBAY_DEFAULT_PACKAGE_LENGTH_IN` / `_WIDTH_IN` / `_HEIGHT_IN` | optional | Default package dimensions in inches. Override the per-item-class defaults. |
 | `EBAY_STRICT_QUALITY` | optional | Set to `1` to **stop** a publish when eBay's item-specifics schema can't be retrieved, instead of publishing with a warning. |

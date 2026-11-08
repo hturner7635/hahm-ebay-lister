@@ -15,6 +15,13 @@ import {
   EBAY_MEDIA_BASE,
 } from "./config";
 import {
+  SHIP_FROM_LOCATION_KEY,
+  SHIP_FROM_LOCATION_NAME,
+  shipFromAddressFromEnv,
+  shipFromLocationBody,
+  type ShipFromAddress,
+} from "./ship-from";
+import {
   suggestLeafCategories,
   categoryAspects,
   acceptedConditionIds,
@@ -917,7 +924,11 @@ export interface AccountOptions {
   payment: { id: string; name: string }[];
   returns: { id: string; name: string }[];
   locations: { id: string; name: string }[];
+  // Why no shipping origin could be set up, when eBay refused to create one.
+  locationNote?: string;
 }
+const locationLabel = (name: unknown, postalCode: unknown, country: unknown) =>
+  [name, postalCode, country].filter(Boolean).join(" · ");
 export async function fetchAccountOptions(
   accessToken: string,
 ): Promise<AccountOptions> {
@@ -954,14 +965,61 @@ export async function fetchAccountOptions(
       .filter((x: any) => x.merchantLocationStatus === "ENABLED")
       .map((x: any) => ({
         id: String(x.merchantLocationKey),
-        name: [
+        name: locationLabel(
           x.name,
           x.location?.address?.postalCode,
           x.location?.address?.country,
-        ]
-          .filter(Boolean)
-          .join(" · "),
+        ),
       })),
+  };
+}
+
+// eBay won't publish without an enabled inventory location, and a seller who
+// has never used eBay's Inventory API has none. When that's the case and a
+// ship-from address is configured (the EBAY_LOCATION_* settings), create the
+// location, or re-enable the one this app created before, so it can be picked.
+export async function ensureShipFromLocation(
+  accessToken: string,
+  options: AccountOptions,
+  address: ShipFromAddress | null = shipFromAddressFromEnv(),
+): Promise<AccountOptions> {
+  if (options.locations.length || !address) return options;
+  const url = `${EBAY_INV_BASE}/location/${SHIP_FROM_LOCATION_KEY}`;
+  let r = await withTransientRetry(
+    () =>
+      ebayRequest(accessToken, "POST", url, {
+        body: shipFromLocationBody(address),
+      }),
+    "create location",
+    SHIP_FROM_LOCATION_KEY,
+  );
+  // 409: the location already exists, and since it wasn't listed as enabled
+  // above, it was disabled. Turn it back on.
+  if (r.status === 409)
+    r = await withTransientRetry(
+      () => ebayRequest(accessToken, "POST", `${url}/enable`),
+      "enable location",
+      SHIP_FROM_LOCATION_KEY,
+    );
+  if (!r.ok)
+    return {
+      ...options,
+      locationNote:
+        "eBay couldn't set up your shipping location from the EBAY_LOCATION_* settings: " +
+        (primaryEbayError(r).message || `HTTP ${r.status}`),
+    };
+  return {
+    ...options,
+    locations: [
+      {
+        id: SHIP_FROM_LOCATION_KEY,
+        name: locationLabel(
+          SHIP_FROM_LOCATION_NAME,
+          address.postalCode,
+          address.country,
+        ),
+      },
+    ],
   };
 }
 

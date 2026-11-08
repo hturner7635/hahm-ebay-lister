@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { guardApiRequest } from "@/lib/api-guard";
 import { accessTokenFromCookie, EBAY_COOKIE } from "@/lib/ebay/session";
-import { fetchAccountOptions } from "@/lib/ebay/publish";
+import {
+  ensureShipFromLocation,
+  fetchAccountOptions,
+} from "@/lib/ebay/publish";
 import { withDeadline } from "@/lib/network";
 export async function POST(req: NextRequest) {
   const denied = guardApiRequest(req);
@@ -21,7 +24,10 @@ export async function POST(req: NextRequest) {
         );
       return NextResponse.json({
         ok: true,
-        options: await fetchAccountOptions(token),
+        options: await ensureShipFromLocation(
+          token,
+          await fetchAccountOptions(token),
+        ),
       });
     } catch (e) {
       return NextResponse.json(
