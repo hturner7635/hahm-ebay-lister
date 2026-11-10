@@ -26,7 +26,8 @@ import {
   getAnalysisModel,
   getSortModel,
 } from "@/lib/model-preferences";
-import { resizeImage } from "@/lib/resize";
+import { resizeImage, shrinkPhoto } from "@/lib/resize";
+import { fitPhotosForAnalysis } from "@/lib/analysis-photos";
 import { syncShoeSizeSpecifics } from "@/lib/ebay/shoe-size";
 import { buildSku } from "@/lib/sku";
 import { chunkImagesForUpload } from "@/lib/uploadBatches";
@@ -528,7 +529,7 @@ export default function Home() {
       const group = groupsRef.current.find((g) => g.id === groupId);
       if (!group || group.cloudBatchId || inFlight.current.has(groupId)) return;
       inFlight.current.add(groupId);
-      const imgs = (group.analysisPhotoIds ?? group.photoIds)
+      const photos = (group.analysisPhotoIds ?? group.photoIds)
         .map((id) => photoMap.get(id))
         .filter((p): p is Photo => Boolean(p) && p!.analysisSelected !== false)
         .map((p) => ({ mediaType: p.mediaType, data: p.data }));
@@ -538,6 +539,9 @@ export default function Home() {
         ),
       );
       try {
+        // One request carries all of the item's photos, so keep it under the
+        // platform's request-size limit.
+        const imgs = await fitPhotosForAnalysis(photos, shrinkPhoto);
         const res = await apiPost("/api/analyze", {
           profile: "auto",
           images: imgs,

@@ -6,6 +6,8 @@ import { applyShippingDefaults } from "@/lib/shipping-defaults";
 import { requestText } from "@/lib/text-dialog";
 import { loadAccountOptions } from "@/lib/account-options-client";
 import { apiPost } from "@/lib/api-client";
+import { fitPhotosForAnalysis } from "@/lib/analysis-photos";
+import { shrinkPhoto } from "@/lib/resize";
 import { draftIssues } from "@/lib/client-review";
 import { isStandardSizeAspect } from "@/lib/ebay/aspects";
 interface Props {
@@ -80,10 +82,15 @@ export function DraftControls({ group: g, photoById, onGroupEdit }: Props) {
     setBusy(true);
     setError("");
     try {
-      const images = (g.analysisPhotoIds ?? g.photoIds)
-        .map(photoById)
-        .filter((p): p is Photo => Boolean(p) && p!.analysisSelected !== false)
-        .map((p) => ({ mediaType: p.mediaType, data: p.data }));
+      const images = await fitPhotosForAnalysis(
+        (g.analysisPhotoIds ?? g.photoIds)
+          .map(photoById)
+          .filter(
+            (p): p is Photo => Boolean(p) && p!.analysisSelected !== false,
+          )
+          .map((p) => ({ mediaType: p.mediaType, data: p.data })),
+        shrinkPhoto,
+      );
       const r = await apiPost("/api/ebay/prepare", {
         listing: l,
         images,

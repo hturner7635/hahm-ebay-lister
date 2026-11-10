@@ -63,7 +63,28 @@ function scaleDown(w: number, h: number, max: number) {
   return { width: Math.round(w * ratio), height: Math.round(h * ratio) };
 }
 
-async function loadBitmap(file: File): Promise<ImageBitmap | HTMLImageElement> {
+/**
+ * Re-encode an already-resized photo (raw base64) as a smaller JPEG, for
+ * requests that would otherwise be too large to send (lib/analysis-photos.ts).
+ */
+export async function shrinkPhoto(
+  image: { mediaType: string; data: string },
+  maxDim: number,
+  quality: number,
+): Promise<{ mediaType: "image/jpeg"; data: string }> {
+  const bytes = Uint8Array.from(atob(image.data), (c) => c.charCodeAt(0));
+  const bitmap = await loadBitmap(new Blob([bytes], { type: image.mediaType }));
+  try {
+    return {
+      mediaType: "image/jpeg",
+      data: drawToJpeg(bitmap, maxDim, quality).split(",")[1],
+    };
+  } finally {
+    if ("close" in bitmap) bitmap.close();
+  }
+}
+
+async function loadBitmap(file: Blob): Promise<ImageBitmap | HTMLImageElement> {
   if (typeof createImageBitmap === "function") {
     try {
       return await createImageBitmap(file);

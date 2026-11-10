@@ -24,6 +24,7 @@ import {
   normalizeItemProfile,
 } from "@/lib/prompts";
 import { toImageBlock, type ImageBlock } from "@/lib/images";
+import { MAX_ANALYSIS_PHOTOS } from "@/lib/analysis-photos";
 import { optimizeTitle } from "@/lib/titleOptimizer";
 import { applyPriceMarkup, priceMarkupPercent } from "@/lib/pricing";
 import { resolveEffort, resolveModel, thinksByDefault } from "@/lib/models";
@@ -37,7 +38,7 @@ export const maxDuration = 300;
 
 const ANALYSIS_MODEL = "claude-opus-4-8";
 const ROUTER_MODEL = "claude-sonnet-4-6";
-const MAX_IMAGES = 24;
+const MAX_IMAGES = MAX_ANALYSIS_PHOTOS;
 
 // Stop starting work once the budget is spent — headroom under maxDuration.
 const ANALYZE_TIME_BUDGET_MS = 250_000;

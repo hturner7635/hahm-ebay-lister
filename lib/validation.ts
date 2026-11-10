@@ -1,5 +1,9 @@
 import { z } from "zod";
 import type { ListingResult } from "./types";
+import {
+  MAX_ANALYSIS_PHOTOS,
+  MAX_ANALYSIS_REQUEST_CHARS,
+} from "./analysis-photos";
 
 const text = z.string().max(500);
 const scalar = z
@@ -70,9 +74,10 @@ export const imageSchema = z.object({
 export const imagesSchema = z
   .array(imageSchema)
   .min(1)
-  .max(24)
+  .max(MAX_ANALYSIS_PHOTOS)
   .refine(
-    (xs) => xs.reduce((n, x) => n + x.data.length, 0) < 3_800_000,
+    (xs) =>
+      xs.reduce((n, x) => n + x.data.length, 0) < MAX_ANALYSIS_REQUEST_CHARS,
     "Photo data is too large. Select fewer analysis photos.",
   );
 export const skuSchema = z
